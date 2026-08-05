@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>AI Assistant</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+
+<body>
+
+    <div class="app-container">
+
+
+        <!-- =========================
+             CHAT HISTORY
+        ========================== -->
+
+        <aside class="history-sidebar">
+
+            <div class="history-header">
+
+                <h2>💬 Chat History</h2>
+
+                <button id="newChatButton">
+                    + New Chat
+                </button>
+
+                <button class="clear-history-button" id="clearHistoryButton">
+                   🗑️ Clear History
+                </button>
+
+            </div>
+
+
+            <div class="history-list"
+                 id="historyList">
+
+                <!-- History items appear here -->
+
+            </div>
+
+        </aside>
+
+
+
+        <!-- =========================
+             MAIN CHAT
+        ========================== -->
+
+        <div class="chat-container">
+
+
+            <!-- HEADER -->
+
+            <div class="chat-header">
+
+                <div class="header-title">
+
+                    <div class="bot-avatar">
+                        🤖
+                    </div>
+
+                    <div>
+
+                        <h1>AI Assistant</h1>
+
+                        <p>● Online</p>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    class="header-button"
+                    id="themeButton">
+
+                    🌙
+
+                </button>
+
+            </div>
+
+
+
+            <!-- CHAT BOX -->
+
+            <div class="chat-box"
+                 id="chatBox">
+
+                <div class="message bot-message">
+
+                    Hello! 👋<br><br>
+
+                    I'm your AI assistant.
+                    How can I help you today?
+
+                </div>
+
+            </div>
+
+
+
+            <!-- INPUT -->
+
+            <div class="chat-input">
+
+                <input
+                    type="text"
+                    id="userInput"
+                    placeholder="Type your message..."
+                    autocomplete="off"
+                >
+
+                <button
+                    class="send-button"
+                    id="sendButton">
+
+                    ➤
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+</body>
+
+</html>
