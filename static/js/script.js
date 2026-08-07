@@ -84,10 +84,10 @@ async function sendMessage() {
     // Display AI answer
     addMessage(data.response, "bot");
 
-} catch (error) {
+   } catch (error) {
     console.error("Chat error:", error);
     addMessage("Sorry, something went wrong. Please try again.", "bot");
-}
+   }
 }
 
 

@@ -45,7 +45,7 @@ def chat():
         # --------------------------------
 
         models_to_try = [
-            "gemini-2.5-flash-lite"
+            "gemini-2.5-flash"
         ]
 
         last_error = None
@@ -133,5 +133,5 @@ if __name__ == "__main__":
     app.run(
         debug=True,
         host="127.0.0.1",
-        port=10000
+        port=5000
     )
