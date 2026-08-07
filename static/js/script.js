@@ -67,74 +67,27 @@ async function sendMessage() {
 
 
     try {
+    const response = await fetch("/chat", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            message: userMessage
+        })
+    });
 
-        const response = await fetch("/chat", {
+    const data = await response.json();
 
-            method: "POST",
+    console.log("AI Response:", data);
 
-            headers: {
-                "Content-Type": "application/json"
-            },
+    // Display AI answer
+    addMessage(data.response, "bot");
 
-            body: JSON.stringify({
-                message: usermessage
-            })
-
-        });
-
-
-        const data = await response.json();
-
-
-        // Remove typing animation
-        const typing =
-            document.getElementById("typingMessage");
-
-        if (typing) {
-            typing.remove();
-        }
-
-
-        // Get AI response
-        const botResponse =
-            data.response || "No response received.";
-
-
-        // Show AI response
-        addMessage(
-            botResponse,
-            "bot-message"
-        );
-
-
-        // Save response
-        currentChat.push({
-            sender: "bot",
-            text: botResponse
-        });
-
-
-        saveCurrentChat();
-
-
-    } catch (error) {
-
-        console.error("Error:", error);
-
-
-        const typing =
-            document.getElementById("typingMessage");
-
-        if (typing) {
-            typing.remove();
-        }
-
-
-        addMessage(
-            "Sorry, something went wrong. Please try again.",
-            "bot-message"
-        );
-    }
+} catch (error) {
+    console.error("Chat error:", error);
+    addMessage("Sorry, something went wrong. Please try again.", "bot");
+}
 }
 
 
