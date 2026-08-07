@@ -45,7 +45,7 @@ def chat():
         # --------------------------------
 
         models_to_try = [
-            "gemini-3.5-flash-lite"
+            "gemini-2.5-flash-lite"
         ]
 
         last_error = None
