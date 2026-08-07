@@ -13,7 +13,7 @@ app = Flask(__name__)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY is missing")
+    raise ValueError("GEMINI_API_KEY is missing from .env")
 
 # Create Gemini client
 client = genai.Client(api_key=GEMINI_API_KEY)
@@ -28,6 +28,7 @@ def home():
 def chat():
 
     try:
+
         data = request.get_json()
 
         user_message = data.get("message", "").strip()
@@ -39,9 +40,12 @@ def chat():
 
         print("User:", user_message)
 
-        # Gemini model
+        # --------------------------------
+        # TRY GEMINI 2.5 FLASH
+        # --------------------------------
+
         models_to_try = [
-            "gemini-2.5-flash"
+            "gemini-3.5-flash-lite"
         ]
 
         last_error = None
@@ -51,6 +55,7 @@ def chat():
             for attempt in range(3):
 
                 try:
+
                     print(
                         f"Trying {model_name} "
                         f"(attempt {attempt + 1})"
@@ -72,6 +77,7 @@ def chat():
                 except Exception as e:
 
                     last_error = e
+
                     error_text = str(e)
 
                     print(
@@ -79,7 +85,7 @@ def chat():
                         f"{error_text}"
                     )
 
-                    # Retry temporary errors
+                    # Retry only temporary errors
                     if (
                         "503" in error_text
                         or "UNAVAILABLE" in error_text
@@ -95,13 +101,23 @@ def chat():
                         time.sleep(wait_time)
 
                     else:
+
+                        # Don't retry permanent errors
                         break
+
+        # --------------------------------
+        # ALL ATTEMPTS FAILED
+        # --------------------------------
 
         print("Final Gemini error:", last_error)
 
         return jsonify({
-            "response": "Gemini is temporarily unavailable. Please try again."
+            "response": (
+                "Gemini is temporarily busy. "
+                "Please try again in a few seconds."
+            )
         }), 503
+
 
     except Exception as e:
 
@@ -113,8 +129,9 @@ def chat():
 
 
 if __name__ == "__main__":
+
     app.run(
-        debug=False,
-        host="0.0.0.0",
-        port=5000
+        debug=True,
+        host="127.0.0.1",
+        port=10000
     )
