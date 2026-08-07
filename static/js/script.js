@@ -77,7 +77,7 @@ async function sendMessage() {
             },
 
             body: JSON.stringify({
-                message: message
+                message: usermessage
             })
 
         });
