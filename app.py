@@ -2,9 +2,8 @@ from flask import Flask, render_template, request, jsonify
 from google import genai
 from dotenv import load_dotenv
 import os
-import time
 
-# Load environment variables
+# Load .env
 load_dotenv()
 
 app = Flask(__name__)
@@ -13,7 +12,7 @@ app = Flask(__name__)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY is missing from .env")
+    raise ValueError("GEMINI_API_KEY is missing")
 
 # Create Gemini client
 client = genai.Client(api_key=GEMINI_API_KEY)
@@ -28,110 +27,51 @@ def home():
 def chat():
 
     try:
-
         data = request.get_json()
 
+        if not data:
+            return jsonify({
+                "response": "No data received."
+            }), 400
+
         user_message = data.get("message", "").strip()
+
+        print("User:", user_message)
 
         if not user_message:
             return jsonify({
                 "response": "Please enter a message."
-            })
+            }), 400
 
-        print("User:", user_message)
+        # CURRENT GEMINI MODEL
+        response = client.models.generate_content(
+            model="gemini-3.6-flash",
+            contents=user_message
+        )
 
-        # --------------------------------
-        # TRY GEMINI 2.5 FLASH
-        # --------------------------------
+        bot_response = response.text
 
-        models_to_try = [
-            "gemini-2.5-flash"
-        ]
-
-        last_error = None
-
-        for model_name in models_to_try:
-
-            for attempt in range(3):
-
-                try:
-
-                    print(
-                        f"Trying {model_name} "
-                        f"(attempt {attempt + 1})"
-                    )
-
-                    response = client.models.generate_content(
-                        model=model_name,
-                        contents=user_message
-                    )
-
-                    bot_response = response.text
-
-                    print("AI:", bot_response)
-
-                    return jsonify({
-                        "response": bot_response
-                    })
-
-                except Exception as e:
-
-                    last_error = e
-
-                    error_text = str(e)
-
-                    print(
-                        f"Error from {model_name}: "
-                        f"{error_text}"
-                    )
-
-                    # Retry only temporary errors
-                    if (
-                        "503" in error_text
-                        or "UNAVAILABLE" in error_text
-                        or "429" in error_text
-                    ):
-
-                        wait_time = 2 ** attempt
-
-                        print(
-                            f"Waiting {wait_time} seconds..."
-                        )
-
-                        time.sleep(wait_time)
-
-                    else:
-
-                        # Don't retry permanent errors
-                        break
-
-        # --------------------------------
-        # ALL ATTEMPTS FAILED
-        # --------------------------------
-
-        print("Final Gemini error:", last_error)
+        print("AI:", bot_response)
 
         return jsonify({
-            "response": (
-                "Gemini is temporarily busy. "
-                "Please try again in a few seconds."
-            )
-        }), 503
-
+            "response": bot_response
+        })
 
     except Exception as e:
 
-        print("Application error:", str(e))
+        print("GEMINI ERROR:", str(e))
 
         return jsonify({
-            "response": "Something went wrong. Please try again."
+            "response": "Gemini error: " + str(e)
         }), 500
 
 
 if __name__ == "__main__":
 
+    port = int(os.environ.get("PORT", 5000))
+
     app.run(
-        debug=True,
-        host="127.0.0.1",
-        port=5000
+        host="0.0.0.0",
+        port=port,
+        debug=False
     )
