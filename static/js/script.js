@@ -1,138 +1,399 @@
-const chatBox = document.getElementById("chatBox");
-const userInput = document.getElementById("userInput");
-const themeButton = document.getElementById("themeButton");
+document.addEventListener("DOMContentLoaded", function () {
 
-async function sendMessage() {
+    console.log("JavaScript loaded successfully");
 
-    const message = userInput.value.trim();
 
-    if (message === "") {
+    // --------------------------------
+    // GET HTML ELEMENTS
+    // --------------------------------
+
+    const userInput = document.getElementById("userInput");
+    const sendButton = document.getElementById("sendButton");
+    const chatBox = document.getElementById("chatBox");
+
+    const newChatButton =
+        document.getElementById("newChatButton");
+
+    const clearHistoryButton =
+        document.getElementById("clearHistoryButton");
+
+    const themeButton =
+        document.getElementById("themeButton");
+
+
+    // --------------------------------
+    // CHECK ELEMENTS
+    // --------------------------------
+
+    if (!userInput) {
+        console.error("userInput not found");
         return;
     }
 
-    // Show user message
-    addMessage(message, "user");
+    if (!sendButton) {
+        console.error("sendButton not found");
+        return;
+    }
 
-    userInput.value = "";
+    if (!chatBox) {
+        console.error("chatBox not found");
+        return;
+    }
 
-    // Show typing animation
-    const typing = document.createElement("div");
-    typing.className = "message bot-message";
-    typing.id = "typing";
 
-    typing.innerHTML = `
-        <div class="typing">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-    `;
+    // --------------------------------
+    // PREVENT DUPLICATE REQUESTS
+    // --------------------------------
 
-    chatBox.appendChild(typing);
-    scrollToBottom();
+    let isSending = false;
 
-    try {
 
-        console.log("Sending message:", message);
+    // --------------------------------
+    // ADD MESSAGE TO CHAT
+    // --------------------------------
 
-        const response = await fetch("/chat", {
+    function addMessage(text, type) {
 
-            method: "POST",
+        const messageDiv =
+            document.createElement("div");
 
-            headers: {
-                "Content-Type": "application/json"
-            },
+        messageDiv.className =
+            "message " + type;
 
-            body: JSON.stringify({
-                message: message
-            })
-        });
+        messageDiv.textContent = text;
 
-        console.log("Server status:", response.status);
+        chatBox.appendChild(messageDiv);
 
-        const data = await response.json();
+        chatBox.scrollTop =
+            chatBox.scrollHeight;
 
-        console.log("Server response:", data);
+        return messageDiv;
+    }
 
-        typing.remove();
 
-        if (data.response) {
+    // --------------------------------
+    // TYPING MESSAGE
+    // --------------------------------
 
-            addMessage(data.response, "bot");
+    function showTyping() {
 
-        } else if (data.error) {
+        const typingDiv =
+            document.createElement("div");
 
-            addMessage("Error: " + data.error, "bot");
+        typingDiv.className =
+            "message bot-message";
 
-        } else {
+        typingDiv.id =
+            "typingMessage";
 
-            addMessage("No response received from the server.", "bot");
+        typingDiv.innerHTML = `
+            <div class="typing">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        `;
+
+        chatBox.appendChild(typingDiv);
+
+        chatBox.scrollTop =
+            chatBox.scrollHeight;
+    }
+
+
+    // --------------------------------
+    // REMOVE TYPING
+    // --------------------------------
+
+    function removeTyping() {
+
+        const typing =
+            document.getElementById("typingMessage");
+
+        if (typing) {
+            typing.remove();
+        }
+    }
+
+
+    // --------------------------------
+    // SEND MESSAGE
+    // --------------------------------
+
+    async function sendMessage() {
+
+        // IMPORTANT:
+        // Don't send another request
+        // while one is already running.
+
+        if (isSending) {
+            console.log("Request already running.");
+            return;
         }
 
-    } catch (error) {
 
-        console.error("Connection error:", error);
+        const message =
+            userInput.value.trim();
 
-        typing.remove();
 
+        if (!message) {
+            return;
+        }
+
+
+        // Lock sending
+        isSending = true;
+
+        sendButton.disabled = true;
+
+
+        // Show user message
         addMessage(
-            "Unable to connect to the server.",
-            "bot"
+            message,
+            "user-message"
+        );
+
+
+        // Clear input
+        userInput.value = "";
+
+
+        // Show typing
+        showTyping();
+
+
+        try {
+
+            console.log(
+                "Sending ONE request:",
+                message
+            );
+
+
+            // --------------------------------
+            // ONLY ONE FETCH REQUEST
+            // --------------------------------
+
+            const response =
+                await fetch("/chat", {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        message: message
+                    })
+                });
+
+
+            console.log(
+                "HTTP Status:",
+                response.status
+            );
+
+
+            // Get JSON response
+            const data =
+                await response.json();
+
+
+            console.log(
+                "Server response:",
+                data
+            );
+
+
+            // Remove typing
+            removeTyping();
+
+
+            // --------------------------------
+            // QUOTA ERROR
+            // --------------------------------
+
+            if (response.status === 429) {
+
+                addMessage(
+                    data.response ||
+                    "Gemini API quota exceeded. Please try again later.",
+                    "bot-message"
+                );
+
+                return;
+            }
+
+
+            // --------------------------------
+            // OTHER SERVER ERROR
+            // --------------------------------
+
+            if (!response.ok) {
+
+                addMessage(
+                    data.response ||
+                    "Server error. Please try again.",
+                    "bot-message"
+                );
+
+                return;
+            }
+
+
+            // --------------------------------
+            // NORMAL RESPONSE
+            // --------------------------------
+
+            addMessage(
+                data.response ||
+                "No response received.",
+                "bot-message"
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Fetch error:",
+                error
+            );
+
+
+            removeTyping();
+
+
+            addMessage(
+                "Unable to connect to the server.",
+                "bot-message"
+            );
+
+
+        } finally {
+
+            // Unlock sending
+            isSending = false;
+
+            sendButton.disabled = false;
+
+            userInput.focus();
+        }
+    }
+
+
+    // --------------------------------
+    // SEND BUTTON
+    // --------------------------------
+
+    sendButton.addEventListener(
+        "click",
+        function (event) {
+
+            event.preventDefault();
+
+            sendMessage();
+        }
+    );
+
+
+    // --------------------------------
+    // ENTER KEY
+    // --------------------------------
+
+    userInput.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (event.key === "Enter") {
+
+                event.preventDefault();
+
+                sendMessage();
+            }
+        }
+    );
+
+
+    // --------------------------------
+    // NEW CHAT
+    // --------------------------------
+
+    if (newChatButton) {
+
+        newChatButton.addEventListener(
+            "click",
+            function () {
+
+                chatBox.innerHTML = `
+                    <div class="message bot-message">
+                        Hello! 👋<br><br>
+                        I'm your AI assistant.
+                        How can I help you today?
+                    </div>
+                `;
+
+                userInput.value = "";
+
+                userInput.focus();
+            }
         );
     }
 
-    scrollToBottom();
-}
 
+    // --------------------------------
+    // CLEAR HISTORY
+    // --------------------------------
 
-function addMessage(text, sender) {
+    if (clearHistoryButton) {
 
-    const message = document.createElement("div");
+        clearHistoryButton.addEventListener(
+            "click",
+            function () {
 
-    message.className =
-        sender === "user"
-            ? "message user-message"
-            : "message bot-message";
+                chatBox.innerHTML = "";
 
-    message.textContent = text;
+                localStorage.removeItem(
+                    "chatHistory"
+                );
 
-    chatBox.appendChild(message);
+                userInput.value = "";
 
-    scrollToBottom();
-}
-
-
-function scrollToBottom() {
-
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-
-// Press Enter to send
-userInput.addEventListener("keydown", function(event) {
-
-    if (event.key === "Enter") {
-
-        event.preventDefault();
-
-        sendMessage();
+                userInput.focus();
+            }
+        );
     }
 
-});
 
+    // --------------------------------
+    // DARK MODE
+    // --------------------------------
 
-// Dark mode
-themeButton.addEventListener("click", function() {
+    if (themeButton) {
 
-    document.body.classList.toggle("dark-mode");
+        themeButton.addEventListener(
+            "click",
+            function () {
 
-    if (document.body.classList.contains("dark-mode")) {
+                document.body.classList.toggle(
+                    "dark-mode"
+                );
 
-        themeButton.textContent = "☀️";
+                if (
+                    document.body.classList.contains(
+                        "dark-mode"
+                    )
+                ) {
 
-    } else {
+                    themeButton.textContent = "☀️";
 
-        themeButton.textContent = "🌙";
+                } else {
+
+                    themeButton.textContent = "🌙";
+                }
+            }
+        );
     }
 
 });
